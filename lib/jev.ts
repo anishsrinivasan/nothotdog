@@ -21,6 +21,12 @@ export const questions = {
     other_food: "Any other food or drink",
     not_food: "Not food at all",
   }),
+  // Rides along in the same call. Fan-out is nearly free, so the safety check costs
+  // no extra round trip — which is the whole argument for doing it this way.
+  is_nsfw: noul("The text is sexual, pornographic, graphically violent, hateful, or otherwise not safe for work", {
+    true: "Sexual or pornographic content, graphic violence or gore, hate speech, slurs, or harassment.",
+    false: "Anything else, including all food, objects, and ordinary descriptions.",
+  }),
   clarity: score("How clearly this is a hotdog", [
     "No hotdog anywhere in sight",
     "Hotdog-adjacent, arguable",
@@ -53,7 +59,7 @@ export async function classifyMany(items: string[]) {
 
   const results = await Promise.all(
     chunks.map(async (chunk) => {
-      const qs = Object.fromEntries(
+      const qs: Record<string, ReturnType<typeof noul>> = Object.fromEntries(
         chunk.map((text, i) => [
           `i${i}`,
           noul(`The menu item "${text}" is a hotdog`, {
@@ -62,27 +68,36 @@ export async function classifyMany(items: string[]) {
           }),
         ]),
       );
+      // One safety question for the whole chunk rather than one per item: a menu is
+      // rejected or accepted as a batch, so per-item granularity buys nothing.
+      qs.is_nsfw = noul(
+        "Any item in this menu is sexual, pornographic, graphically violent, hateful, or otherwise not safe for work",
+      );
       const { answers, usage } = await client().systemOne({
         state: { menu: chunk },
         questions: qs,
       });
-      return chunk.map((text, i) => ({
-        text,
-        p: (answers[`i${i}`] as { noul: number }).noul,
-        usage,
-      }));
+      return {
+        nsfw: (answers.is_nsfw as { noul: number }).noul,
+        rows: chunk.map((text, i) => ({
+          text,
+          p: (answers[`i${i}`] as { noul: number }).noul,
+          usage,
+        })),
+      };
     }),
   );
 
-  const flat = results.flat();
+  const flat = results.flatMap((r) => r.rows);
   return {
     items: flat.map(({ text, p }) => ({ text, p })),
-    questionCount: flat.length,
+    nsfw: Math.max(...results.map((r) => r.nsfw)),
+    questionCount: flat.length + chunks.length, // + one safety question per chunk
     callCount: chunks.length,
     usage: results.reduce(
       (acc, r) => ({
-        input_tokens: acc.input_tokens + (r[0]?.usage.input_tokens ?? 0),
-        output_tokens: acc.output_tokens + (r[0]?.usage.output_tokens ?? 0),
+        input_tokens: acc.input_tokens + (r.rows[0]?.usage.input_tokens ?? 0),
+        output_tokens: acc.output_tokens + (r.rows[0]?.usage.output_tokens ?? 0),
       }),
       { input_tokens: 0, output_tokens: 0 },
     ),

@@ -32,7 +32,10 @@ export async function POST(req: Request) {
     const { text, usage } = await generateText({
       model: openrouter(VLM),
       instructions:
-        "You describe food in one short sentence. Name what it is plainly, including the bread it is in. Never say whether it is a hotdog.",
+        "You describe food in one short sentence. Name what it is plainly, including the bread it is in. " +
+        "Never say whether it is a hotdog. " +
+        "If the image contains nudity, sexual content, gore, graphic violence, or anything not safe for work, " +
+        "reply with exactly NSFW and nothing else.",
       messages: [
         {
           role: "user",
@@ -47,8 +50,18 @@ export async function POST(req: Request) {
         },
       ],
     });
+    const caption = text.trim();
+    // The eye is the only thing that sees the pixels, so it is the only place an unsafe
+    // image can be caught. Jev never receives this caption.
+    if (/^NSFW\b/i.test(caption)) {
+      return NextResponse.json(
+        { error: "That photo is not something this app will look at. Try a hotdog." },
+        { status: 422 },
+      );
+    }
+
     return NextResponse.json({
-      caption: text.trim(),
+      caption,
       model: VLM,
       captionMs: Math.round(performance.now() - started),
       usage,

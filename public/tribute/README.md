@@ -1,12 +1,11 @@
 # Tribute images
 
-Drop the stills you want in the bottom carousel here, named `1.jpg` … `5.jpg`
-(any web image format works — update the `src` values in `app/page.tsx` if you
-change the names).
+`1.jpg`–`3.jpg` are frames from the demo video on YouTube, cropped to 16:9.
+Replace them with your own stills and the carousel picks them up — same names,
+any web image format (update `TRIBUTE` in `app/page.tsx` if you change names).
 
-A slide whose file is missing still renders: the caption carries it, and the
-`alt` text stands in for the image. So the carousel is never broken, only emptier.
+If a file here goes missing, the slide falls back to the same frame served from
+YouTube's thumbnail CDN, so the carousel cannot render broken.
 
-Note: frames from the show are HBO's. Fine for a non-commercial fan tribute in
-most people's judgement, but it is your call and your risk — swap in your own
-art if you would rather not host theirs.
+These are HBO's frames. Ordinary for a non-commercial fan tribute, but hosting
+them is your call — swap in your own art if you would rather not.

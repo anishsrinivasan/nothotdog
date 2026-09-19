@@ -1,6 +1,12 @@
 "use client";
 
+import Autoplay from "embla-carousel-autoplay";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
 import { DEFAULT_THRESHOLD, verdictOf, type Verdict } from "@/lib/verdict";
 
 type Mode = "text" | "menu" | "photo";
@@ -10,6 +16,7 @@ type Single = {
     is_hotdog: { noul: number };
     category: { choice: string; confidence: number };
     clarity: { score: number; confidence: number };
+    is_nsfw: { noul: number };
   };
   usage: { input_tokens: number; output_tokens: number };
   model: string;
@@ -18,6 +25,7 @@ type Single = {
 
 type Batch = {
   items: { text: string; p: number }[];
+  nsfw: number;
   questionCount: number;
   callCount: number;
   usage: { input_tokens: number; output_tokens: number };
@@ -80,42 +88,89 @@ const FOODS = [
   "an acorn squash",
 ];
 
+// Deliberately lower than the hotdog gate: err toward refusing.
+const NSFW_GATE = 0.7;
+
+function Blocked({ what }: { what: string }) {
+  return (
+    <div className="rounded-2xl border border-neutral-800 bg-neutral-950 px-6 py-10 text-center">
+      <div className="text-4xl">🚫</div>
+      <div className="mt-3 font-mono text-sm uppercase tracking-widest text-neutral-400">
+        not classifying that
+      </div>
+      <p className="mt-2 text-sm text-neutral-500">
+        {what} tripped the safety check. This app only wants to look at food.
+      </p>
+    </div>
+  );
+}
+
+const VIDEO_ID = "tWwCK95X6go";
+
+/**
+ * Local stills win when present; frames from the demo video fill in otherwise, so a
+ * slide can never render as a broken image. Drop files in public/tribute to override.
+ */
 const TRIBUTE = [
-  { src: "/tribute/1.jpg", caption: "Jian-Yang. Founder, SeeFood. Sole employee." },
-  { src: "/tribute/2.jpg", caption: "The pitch: Shazam, but for food." },
-  { src: "/tribute/3.jpg", caption: "The roadmap: octopus. Then the other foods." },
-  { src: "/tribute/4.jpg", caption: "The funding round nobody understood." },
-  { src: "/tribute/5.jpg", caption: "Erlich Bachman is not a co-founder." },
+  { src: "/tribute/1.jpg", fallback: `https://img.youtube.com/vi/${VIDEO_ID}/maxresdefault.jpg`, caption: "The demo. An audience of five, in a kitchen." },
+  { src: "/tribute/2.jpg", fallback: `https://img.youtube.com/vi/${VIDEO_ID}/hq1.jpg`, caption: "Jian-Yang, back to camera, presenting SeeFood." },
+  { src: "/tribute/3.jpg", fallback: `https://img.youtube.com/vi/${VIDEO_ID}/hq3.jpg`, caption: "The beta testers. Unconvinced." },
 ];
 
+function TributeImage({ src, fallback, alt }: { src: string; fallback: string; alt: string }) {
+  const [current, setCurrent] = useState(src);
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={current}
+      alt={alt}
+      loading="lazy"
+      onError={() => current !== fallback && setCurrent(fallback)}
+      className="aspect-video w-full bg-neutral-900 object-cover"
+    />
+  );
+}
+
 function Tribute() {
+  const autoplay = useRef(Autoplay({ delay: 2600, stopOnInteraction: false }));
   return (
     <section className="mt-10">
-      <h2 className="mb-2 text-center font-mono text-[10px] uppercase tracking-widest text-neutral-600">
-        in tribute — Silicon Valley, S4E4
+      <h2 className="mb-3 text-center font-mono text-[10px] uppercase tracking-widest text-neutral-600">
+        in tribute — Jian-Yang and Silicon Valley
       </h2>
-      {/* Native scroll-snap; a carousel library would be four times the code. */}
-      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {TRIBUTE.map((t) => (
-          <figure
-            key={t.src}
-            className="w-56 shrink-0 snap-center overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={t.src}
-              alt={t.caption}
-              loading="lazy"
-              className="h-40 w-full bg-neutral-900 object-cover text-[11px] text-neutral-600"
-            />
-            <figcaption className="px-3 py-2 text-[11px] leading-snug text-neutral-500">
-              {t.caption}
-            </figcaption>
-          </figure>
-        ))}
+
+      <div className="mb-4 overflow-hidden rounded-xl border border-neutral-800">
+        <iframe
+          className="aspect-video w-full"
+          src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}`}
+          title="Silicon Valley — Jian-Yang's hotdog app"
+          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
+        />
       </div>
-      <p className="text-center text-[11px] text-neutral-600">
-        Swipe. No affiliation with HBO; this is a fan project about a fake app.
+
+      <Carousel
+        opts={{ loop: true, align: "start" }}
+        plugins={[autoplay.current]}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-3">
+          {TRIBUTE.map((t) => (
+            <CarouselItem key={t.src} className="basis-4/5 pl-3 sm:basis-1/2">
+              <figure className="overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950">
+                <TributeImage src={t.src} fallback={t.fallback} alt={t.caption} />
+                <figcaption className="px-3 py-2 text-[11px] leading-snug text-neutral-500">
+                  {t.caption}
+                </figcaption>
+              </figure>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
+
+      <p className="mt-3 text-center text-[11px] text-neutral-600">
+        No affiliation with HBO. A fan project about a fake app.
       </p>
     </section>
   );
@@ -338,6 +393,13 @@ export default function Page() {
     setState(next);
   }
 
+  // Answers are pure functions of their input, so one Map removes every repeat call —
+  // switching tabs, retyping a previous value, re-running the same menu. A query
+  // library would be a dependency for three endpoints that never invalidate.
+  const cache = useRef(new Map<string, Single>());
+  const batchCache = useRef(new Map<string, Batch>());
+  const raceCache = useRef(new Map<string, { llmMs: number; verdicts: string[]; model: string }>());
+
   const post = useCallback(async (url: string, body: unknown) => {
     const res = await fetch(url, {
       method: "POST",
@@ -352,14 +414,25 @@ export default function Page() {
   // Jev is fast enough that re-running on keystroke-idle feels live. That is the demo.
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (mode === "menu" || !state.trim()) return;
+    const key = state.trim();
+    if (mode === "menu" || !key) return;
+
+    const hit = cache.current.get(key);
+    if (hit) {
+      setSingle(hit);
+      setStale(false);
+      return;
+    }
+
     setStale(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       setBusy(true);
       setError(null);
       try {
-        setSingle(await post("/api/classify", { state }));
+        const res: Single = await post("/api/classify", { state: key });
+        cache.current.set(key, res);
+        setSingle(res);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -397,12 +470,20 @@ export default function Page() {
   const lines = () => menu.split("\n").map((s) => s.trim()).filter(Boolean);
 
   async function runMenu() {
-    setBusy(true);
+    const items = lines();
+    const key = items.join("\n");
     setError(null);
-    setBatch(null);
     setRace(null);
+
+    const hit = batchCache.current.get(key);
+    if (hit) return setBatch(hit);
+
+    setBusy(true);
+    setBatch(null);
     try {
-      setBatch(await post("/api/classify", { items: lines() }));
+      const res: Batch = await post("/api/classify", { items });
+      batchCache.current.set(key, res);
+      setBatch(res);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -411,10 +492,18 @@ export default function Page() {
   }
 
   async function runRace() {
+    const items = lines();
+    const key = items.join("\n");
+
+    const hit = raceCache.current.get(key);
+    if (hit) return setRace(hit);
+
     setRacing(true);
     setRace(null);
     try {
-      setRace(await post("/api/race", { items: lines() }));
+      const res = await post("/api/race", { items });
+      raceCache.current.set(key, res);
+      setRace(res);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -424,6 +513,7 @@ export default function Page() {
 
   const p = single?.answers.is_hotdog.noul ?? 0;
   const v = verdictOf(p, threshold);
+  const blocked = (single?.answers.is_nsfw.noul ?? 0) >= NSFW_GATE;
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-8">
@@ -497,7 +587,9 @@ export default function Page() {
             </div>
           </div>
 
-          {single && (
+          {single && blocked && <Blocked what="What you typed" />}
+
+          {single && !blocked && (
             <>
               <AppScreen
                 v={v}
@@ -556,7 +648,9 @@ export default function Page() {
             </button>
           </div>
 
-          {batch && (
+          {batch && batch.nsfw >= NSFW_GATE && <Blocked what="Something in that list" />}
+
+          {batch && batch.nsfw < NSFW_GATE && (
             <>
               <div className="divide-y divide-neutral-900 overflow-hidden rounded-xl border border-neutral-800">
                 {batch.items.map((item, i) => {
