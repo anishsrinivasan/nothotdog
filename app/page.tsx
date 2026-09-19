@@ -80,6 +80,47 @@ const FOODS = [
   "an acorn squash",
 ];
 
+const TRIBUTE = [
+  { src: "/tribute/1.jpg", caption: "Jian-Yang. Founder, SeeFood. Sole employee." },
+  { src: "/tribute/2.jpg", caption: "The pitch: Shazam, but for food." },
+  { src: "/tribute/3.jpg", caption: "The roadmap: octopus. Then the other foods." },
+  { src: "/tribute/4.jpg", caption: "The funding round nobody understood." },
+  { src: "/tribute/5.jpg", caption: "Erlich Bachman is not a co-founder." },
+];
+
+function Tribute() {
+  return (
+    <section className="mt-10">
+      <h2 className="mb-2 text-center font-mono text-[10px] uppercase tracking-widest text-neutral-600">
+        in tribute — Silicon Valley, S4E4
+      </h2>
+      {/* Native scroll-snap; a carousel library would be four times the code. */}
+      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {TRIBUTE.map((t) => (
+          <figure
+            key={t.src}
+            className="w-56 shrink-0 snap-center overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={t.src}
+              alt={t.caption}
+              loading="lazy"
+              className="h-40 w-full bg-neutral-900 object-cover text-[11px] text-neutral-600"
+            />
+            <figcaption className="px-3 py-2 text-[11px] leading-snug text-neutral-500">
+              {t.caption}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+      <p className="text-center text-[11px] text-neutral-600">
+        Swipe. No affiliation with HBO; this is a fan project about a fake app.
+      </p>
+    </section>
+  );
+}
+
 const JAB: Record<string, string> = {
   hotdog: "Correct. This is the one food the app knows.",
   sausage_no_bun: "No bun. Jian-Yang does not negotiate.",
@@ -637,6 +678,8 @@ export default function Page() {
           </a>
         </p>
       </footer>
+
+      <Tribute />
     </main>
   );
 }

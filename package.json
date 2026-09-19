@@ -10,6 +10,7 @@
   "dependencies": {
     "@openrouter/ai-sdk-provider": "^3.1.0",
     "@typesafe-ai/sdk": "^0.6.0",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/firewall": "^1.2.5",
     "ai": "^7.0.107",
     "next": "16.3.5",
