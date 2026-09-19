@@ -211,6 +211,7 @@ function AppScreen({
   stale,
   jevMs,
   captionMs,
+  subject,
   children,
 }: {
   v: Verdict;
@@ -220,19 +221,38 @@ function AppScreen({
   stale?: boolean;
   jevMs?: number;
   captionMs?: number | null;
+  subject?: string;
   children?: React.ReactNode;
 }) {
   const hot = v === "HOTDOG";
   const bg = hot ? "bg-[#00c400]" : v === "UNSURE" ? "bg-[#e5a000]" : "bg-[#e0112b]";
   const label = hot ? "Hotdog!" : v === "UNSURE" ? "Not sure!" : "Not hotdog!";
 
+  const [sharing, setSharing] = useState(false);
+
+  /** Renders the card server-side with next/og, then hands over a real PNG. */
   async function share() {
-    const line = `NotHotdog says: ${label.toUpperCase()} (p=${p.toFixed(3)})`;
+    setSharing(true);
     try {
-      if (navigator.share) await navigator.share({ text: line });
-      else await navigator.clipboard.writeText(line);
+      const url = `/api/share?v=${v}&p=${p}&ms=${jevMs ?? 0}&text=${encodeURIComponent(subject ?? "")}`;
+      const blob = await (await fetch(url)).blob();
+      const file = new File([blob], "nothotdog.png", { type: "image/png" });
+
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        // Desktop browsers mostly cannot share files, so save it instead.
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = href;
+        a.download = "nothotdog.png";
+        a.click();
+        URL.revokeObjectURL(href);
+      }
     } catch {
-      /* the user closed the sheet; nothing to do */
+      /* sheet dismissed, or the render failed; nothing to recover */
+    } finally {
+      setSharing(false);
     }
   }
 
@@ -310,9 +330,10 @@ function AppScreen({
       <div className="space-y-2 rounded-b-2xl bg-neutral-900 px-6 pb-5 pt-4 text-center">
         <button
           onClick={share}
-          className="w-full rounded-lg border-2 border-white bg-[#22b8f0] px-6 py-3 text-xl font-bold text-white shadow-md"
+          disabled={sharing}
+          className="w-full rounded-lg border-2 border-white bg-[#22b8f0] px-6 py-3 text-xl font-bold text-white shadow-md disabled:opacity-60"
         >
-          Share
+          {sharing ? "Making image…" : "Share"}
         </button>
         <div className="text-sm text-neutral-400">No Thanks</div>
         {children}
@@ -597,6 +618,7 @@ export default function Page() {
                 stale={stale}
                 jevMs={single.jevMs}
                 captionMs={mode === "photo" ? captionMs : null}
+                subject={state}
                 image={mode === "photo" ? image : null}
                 jab={v === "UNSURE" ? "Jian-Yang is not sure. A human should look." : JAB[single.answers.category.choice]}
               />
