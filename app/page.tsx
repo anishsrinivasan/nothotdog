@@ -130,6 +130,7 @@ const VIDEO_ID = "tWwCK95X6go";
  * slide can never render as a broken image. Drop files in public/tribute to override.
  */
 const TRIBUTE = [
+  { src: "/tribute/0.jpg", fallback: `https://img.youtube.com/vi/${VIDEO_ID}/maxresdefault.jpg`, caption: "Jian-Yang. Founder, and the entire engineering team." },
   { src: "/tribute/1.jpg", fallback: `https://img.youtube.com/vi/${VIDEO_ID}/maxresdefault.jpg`, caption: "The demo. An audience of five, in a kitchen." },
   { src: "/tribute/2.jpg", fallback: `https://img.youtube.com/vi/${VIDEO_ID}/hq1.jpg`, caption: "Jian-Yang, back to camera, presenting SeeFood." },
   { src: "/tribute/3.jpg", fallback: `https://img.youtube.com/vi/${VIDEO_ID}/hq3.jpg`, caption: "The beta testers. Unconvinced." },
