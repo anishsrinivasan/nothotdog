@@ -113,6 +113,8 @@ function AppScreen({
   jab,
   image,
   stale,
+  jevMs,
+  captionMs,
   children,
 }: {
   v: Verdict;
@@ -120,6 +122,8 @@ function AppScreen({
   jab?: string;
   image?: string | null;
   stale?: boolean;
+  jevMs?: number;
+  captionMs?: number | null;
   children?: React.ReactNode;
 }) {
   const hot = v === "HOTDOG";
@@ -156,15 +160,45 @@ function AppScreen({
 
       <div className="relative bg-neutral-950">
         {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt="" className="h-56 w-full object-cover" />
-        ) : (
-          <div className="px-6 pb-5 pt-10 text-center">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-neutral-600">
-              p(hotdog)
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={image} alt="" className="h-56 w-full object-cover" />
+            <div className="absolute right-3 top-3 flex flex-col items-end gap-1">
+              <span className="rounded-full bg-black/80 px-3 py-1 font-mono text-sm font-bold tabular-nums text-green-400">
+                {p.toFixed(3)}
+              </span>
+              {jevMs !== undefined && (
+                <span className="rounded-full bg-black/80 px-3 py-1 font-mono text-sm font-bold tabular-nums text-green-400">
+                  {jevMs}ms
+                </span>
+              )}
             </div>
-            <div className="shout text-5xl leading-tight">{p.toFixed(3)}</div>
+          </>
+        ) : (
+          <div className="flex items-stretch justify-center divide-x divide-neutral-800 px-4 pb-5 pt-8 text-center">
+            <div className="flex-1 px-3">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-neutral-600">
+                p(hotdog)
+              </div>
+              <div className="shout text-5xl leading-tight">{p.toFixed(3)}</div>
+            </div>
+            {jevMs !== undefined && (
+              <div className="flex-1 px-3">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-neutral-600">
+                  decided in
+                </div>
+                <div className="shout text-5xl leading-tight">
+                  {jevMs}
+                  <span className="text-2xl">ms</span>
+                </div>
+              </div>
+            )}
           </div>
+        )}
+        {captionMs != null && (
+          <p className="px-4 pb-1 text-center font-mono text-[11px] text-amber-500/80">
+            + {captionMs}ms before that, for a normal model to look at the photo
+          </p>
         )}
         {jab && (
           <p
@@ -362,7 +396,7 @@ export default function Page() {
       </header>
 
       <div className="mb-5 flex gap-1 rounded-xl bg-neutral-900 p-1 text-sm">
-        {(["text", "menu", "photo"] as Mode[]).map((m) => (
+        {(["text", "photo", "menu"] as Mode[]).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
@@ -428,6 +462,8 @@ export default function Page() {
                 v={v}
                 p={p}
                 stale={stale}
+                jevMs={single.jevMs}
+                captionMs={mode === "photo" ? captionMs : null}
                 image={mode === "photo" ? image : null}
                 jab={v === "UNSURE" ? "Jian-Yang is not sure. A human should look." : JAB[single.answers.category.choice]}
               />
