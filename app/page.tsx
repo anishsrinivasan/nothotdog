@@ -105,6 +105,24 @@ function Blocked({ what }: { what: string }) {
   );
 }
 
+const REPO = "https://github.com/anishsrinivasan/nothotdog";
+
+function GitHubStar({ className = "" }: { className?: string }) {
+  return (
+    <a
+      href={REPO}
+      target="_blank"
+      rel="noreferrer"
+      className={`inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 px-4 py-1.5 text-sm text-neutral-300 transition hover:border-neutral-500 hover:text-white ${className}`}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden className="h-4 w-4 fill-current">
+        <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z" />
+      </svg>
+      Star on GitHub
+    </a>
+  );
+}
+
 const VIDEO_ID = "tWwCK95X6go";
 
 /**
@@ -545,6 +563,7 @@ export default function Page() {
           <span className="text-neutral-200">hotdog</span> and{" "}
           <span className="text-neutral-200">not hotdog</span>. Octopus is coming in v2.
         </p>
+        <GitHubStar className="mt-3" />
       </header>
 
       <div className="mb-5 flex gap-1 rounded-xl bg-neutral-900 p-1 text-sm">
@@ -784,14 +803,7 @@ export default function Page() {
           knows when to stop claiming.
         </p>
         <p className="pt-1">
-          <a
-            href="https://github.com/anishsrinivasan/nothotdog"
-            target="_blank"
-            rel="noreferrer"
-            className="text-neutral-300 underline underline-offset-2 hover:text-white"
-          >
-            github.com/anishsrinivasan/nothotdog
-          </a>
+          <GitHubStar />
         </p>
       </footer>
 
