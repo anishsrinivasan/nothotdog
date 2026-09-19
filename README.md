@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# nothotdog
 
-## Getting Started
+> Jian-Yang's Shazam for food, which knows two foods: hotdog, and not hotdog.
 
-First, run the development server:
+Not Hotdog (Silicon Valley S4E4) rebuilt on **Jev**, TypeSafe's System One model.
 
-```bash
+Jev doesn't generate text. You give it state plus typed questions and it returns calibrated
+probabilities in one forward pass — 70–500ms, output tokens free. **It also can't see.** So this app
+is honest about where the time goes:
+
+- **text** — type what you're eating. Jev decides. Its latency is the whole latency.
+- **menu** — paste a 200-line menu. One noul per item, ~25 per call, all evaluated in parallel
+  against the same state. Then race a text-generating LLM through the same list.
+- **photo** — the meme version. A VLM captions the picture, Jev decides on the caption. Two bars,
+  and the slow one is never Jev. The caption is editable, so you can see which stage was wrong.
+
+## Run
+
+```sh
+cp .env.example .env.local   # TYPESAFE_API_KEY is the only required one
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Photo mode and race mode additionally need `GOOGLE_GENERATIVE_AI_API_KEY`; without it those two
+degrade with a message and the rest still works.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```sh
+node --experimental-strip-types lib/verdict.test.ts   # the one check worth having
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploying
 
-## Learn More
+See [DEPLOY.md](./DEPLOY.md). Short version: set a credit cap on the OpenRouter key first, add the
+`nothotdog-expensive` Firewall rate-limit rule, then `vercel --prod`.
 
-To learn more about Next.js, take a look at the following resources:
+## Notes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Threshold defaults to **0.90, not 0.50** — the original app shipped at 0.90 because a false
+  HOTDOG is the worse error. Everything ambiguous falls back to NOT HOTDOG.
+- Borderline probabilities go amber instead of guessing; in a real app that's the escalation path
+  to a slower model or a human. Drag the slider and verdicts flip with no new API call.
+- The `choice` criteria name regional variants (Danish ristet, Korean corn dog, konbini dog,
+  Sonoran) on purpose. The original couldn't recognize hotdogs nobody on the team had eaten;
+  in this architecture that bias lives in the criteria text, so it's fixable in one line.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Measured, not claimed
 
-## Deploy on Vercel
+On a laptop against the live APIs, round trip included:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| | Jev | the LLM |
+|---|---|---|
+| 1 item, 3 questions | ~350ms | — |
+| 15 items | 809ms | 967ms |
+| 40 items | 845ms | 1696ms |
+| photo → caption | — | 2278ms before Jev even starts |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Jev going 15 → 40 questions cost 36ms. That flatness is the actual product; the single-call
+latency is just the headline.
+
+Also: `bratwurst in a bun with mustard` scores **0.88** — one notch under the 0.90 gate, so it
+shows *Not sure* instead of the confident *Not hotdog!* the original app gave that exact photo.
+
+## What's skipped
+
+Feedback capture (👎 → JSONL of caption + answers, the eventual eval set), sample images bundled
+for offline demos, and any persistence. Add the first one when you start caring about accuracy.
